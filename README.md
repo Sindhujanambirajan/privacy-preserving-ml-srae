@@ -76,7 +76,7 @@ gene1, gene2, gene3, ..., cancer_type
 python backend/utils.py  # loads MNIST automatically
 ```
 
-## 🔐 Privacy Guarantee
+##  Privacy Guarantee
 - Original data NEVER leaves your system
 - Only encoding Ψ (480 dims) is shared
 - Without the private encoder, Ψ is unreadable
