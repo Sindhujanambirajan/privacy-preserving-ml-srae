@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Privacy-Preserving ML System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #080820;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0d0d30; }
+    ::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 3px; }
+
+    .header {
+      background: linear-gradient(135deg, #0d0d40 0%, #1a1a6e 100%);
+      border-bottom: 2px solid #00d4ff33;
+      padding: 28px 40px;
+      text-align: center;
+    }
+    .header h1 { font-size: 26px; color: #00d4ff; margin-bottom: 6px; letter-spacing: 1px; }
+    .header .subtitle { color: #8888aa; font-size: 13px; }
+    .header .badge {
+      display: inline-block; margin-top: 10px;
+      background: #00ff8822; border: 1px solid #00ff88;
+      color: #00ff88; padding: 4px 14px; border-radius: 20px; font-size: 12px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+    .status-bar {
+      background: #0d1a3a; border: 1px solid #1a3a6a;
+      border-left: 4px solid #00d4ff; border-radius: 8px;
+      padding: 12px 18px; margin-bottom: 28px;
+      display: flex; align-items: center; gap: 10px; font-size: 13px;
+    }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #00ff88; box-shadow: 0 0 6px #00ff88; flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 16px; color: #00d4ff; margin-bottom: 18px;
+      padding-bottom: 8px; border-bottom: 1px solid #1a2a4a;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; margin-bottom: 28px;
+    }
+    @media (max-width: 900px) { .steps-grid { grid-template-columns: 1fr; } }
+    .step-card {
+      background: #0d1030; border: 1px solid #1e2050;
+      border-radius: 14px; padding: 24px; transition: border-color 0.2s;
+    }
+    .step-card:hover { border-color: #00d4ff55; }
+    .step-card.active { border-color: #00d4ff; }
+    .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .step-num {
+      width: 34px; height: 34px; background: #00d4ff; color: #000;
+      font-weight: bold; font-size: 15px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step-card h3 { font-size: 15px; color: #cce0ff; }
+    .step-card p  { font-size: 12px; color: #7788aa; margin-bottom: 16px; line-height: 1.5; }
+    .file-wrap { position: relative; margin-bottom: 12px; }
+    .file-wrap input[type="file"] {
+      width: 100%; padding: 10px;
+      background: #060618; border: 1px dashed #2244aa;
+      border-radius: 8px; color: #8899bb; font-size: 12px; cursor: pointer;
+    }
+    .file-wrap input[type="file"]:hover { border-color: #00d4ff; }
+    .btn {
+      width: 100%; padding: 11px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      letter-spacing: 0.5px; transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover   { opacity: 0.88; }
+    .btn:active  { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-blue   { background: #0077ff; color: #fff; }
+    .btn-green  { background: #00cc66; color: #fff; }
+    .btn-orange { background: #ff7700; color: #fff; }
+    .btn-purple { background: #8844ff; color: #fff; }
+    .btn-red    { background: #cc2244; color: #fff; }
+    .result-panel {
+      margin-top: 14px; background: #060f20;
+      border: 1px solid #1a3a2a; border-radius: 10px;
+      padding: 14px; font-size: 12px; display: none;
+    }
+    .result-panel.show { display: block; }
+    .result-panel .res-title { color: #00ff88; font-weight: 600; margin-bottom: 8px; font-size: 13px; }
+    .result-panel .res-row {
+      display: flex; justify-content: space-between;
+      padding: 5px 0; border-bottom: 1px solid #0a1a0a; color: #99bbaa;
+    }
+    .result-panel .res-row:last-child { border-bottom: none; }
+    .res-val { color: #00ffcc; font-weight: 600; }
+    .privacy-badge {
+      margin-top: 10px; background: #001a0a;
+      border: 1px solid #00ff88; border-radius: 8px;
+      padding: 8px 12px; font-size: 12px; color: #00ff88; text-align: center;
+    }
+    .loading { text-align: center; padding: 16px; color: #00d4ff; font-size: 13px; display: none; }
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid #00d4ff33; border-top-color: #00d4ff;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .metrics-section { margin-bottom: 28px; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 700px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+    .metric-card {
+      background: #0d1030; border: 1px solid #1e2050;
+      border-radius: 12px; padding: 20px; text-align: center;
+    }
+    .metric-value { font-size: 30px; font-weight: bold; color: #00d4ff; }
+    .metric-label { font-size: 11px; color: #6677aa; margin-top: 6px; }
+    .table-section { margin-bottom: 28px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: #0d1a40; padding: 12px 16px;
+      text-align: left; color: #88aadd; font-weight: 600; white-space: nowrap;
+    }
+    td { padding: 10px 16px; border-bottom: 1px solid #0d1a30; color: #aabbcc; }
+    tr:hover td { background: #0d1530; }
+    .badge-low    { color: #00ff88; font-weight: bold; }
+    .badge-medium { color: #ffaa00; font-weight: bold; }
+    .badge-high   { color: #ff4444; font-weight: bold; }
+    .positive { color: #00ff88; }
+    .negative { color: #ff6666; }
+    .chart-section { margin-bottom: 28px; }
+    .chart-container {
+      background: #0d1030; border: 1px solid #1e2050;
+      border-radius: 14px; padding: 20px; text-align: center;
+    }
+    .chart-container img { max-width: 100%; border-radius: 8px; }
+    .pred-table-wrap { max-height: 400px; overflow-y: auto; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+    .tab-btn {
+      padding: 9px 18px; border: 1px solid #1e2050;
+      border-radius: 8px; background: #0d1030; color: #6677aa;
+      font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn.active { background: #00d4ff; color: #000; border-color: #00d4ff; font-weight: 600; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .threat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 700px) { .threat-grid { grid-template-columns: 1fr; } }
+    .threat-card { background: #0d1030; border: 1px solid #1e2050; border-radius: 12px; padding: 18px; }
+    .threat-card h4 { font-size: 14px; margin-bottom: 10px; color: #cce0ff; }
+    .footer { text-align: center; padding: 20px; color: #44556a; font-size: 12px; border-top: 1px solid #0d1a30; }
+
+    /* ── PREDICTION RESULT STYLES ── */
+    .pred-summary {
+      display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .pred-count-box {
+      background: #0a1a0a; border: 1px solid #00ff88;
+      border-radius: 8px; padding: 8px 14px;
+      font-size: 12px; color: #00ff88; text-align: center;
+    }
+    .pred-count-box .big { font-size: 22px; font-weight: bold; display: block; }
+    .pred-row-atl td { border-left: 3px solid #ff4444; }
+    .pred-row-normal td { border-left: 3px solid #00ff88; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔐 Privacy-Preserving Machine Learning System</h1>
+  <div class="subtitle">Multi-Objective Supervised Residual Autoencoder — Final Year Project</div>
+  <span class="badge"> Data Never Leaves Our System</span>
+</div>
+
+<div class="container">
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">System ready — Upload a CSV file to begin</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('main')">🏠 Main Pipeline</button>
+    <button class="tab-btn" onclick="switchTab('evaluate')">📊 Evaluate</button>
+    <button class="tab-btn" onclick="switchTab('threat')">🛡️ Threat Analysis</button>
+    <button class="tab-btn" onclick="switchTab('about')">ℹ️ About</button>
+  </div>
+
+  <!-- TAB: MAIN -->
+  <div id="tab-main" class="tab-content active">
+    <div class="section-title">⚙️ Pipeline Steps</div>
+    <div class="steps-grid">
+
+      <!-- STEP 1 -->
+      <div class="step-card" id="card1">
+        <div class="step-header">
+          <div class="step-num">1</div>
+          <h3>Train SRAE Model</h3>
+        </div>
+        <p>Upload your CSV dataset to train the Supervised Residual Autoencoder with 4 objectives simultaneously.</p>
+        <div class="file-wrap">
+          <input type="file" id="trainFile" accept=".csv"/>
+        </div>
+        <div style="margin-bottom:10px; font-size:11px; color:#4466aa;">
+          Epochs:
+          <input type="number" id="epochsInput" value="30" min="5" max="200"
+            style="width:60px; background:#060618; border:1px solid #2244aa;
+                   border-radius:4px; color:#cce0ff; padding:3px 6px; margin-left:6px;"/>
+        </div>
+        <button class="btn btn-blue" id="trainBtn" onclick="trainModel()">🏋️ Train Model</button>
+        <div class="loading" id="trainLoading"><span class="spinner"></span> Training SRAE... please wait</div>
+        <div class="result-panel" id="trainResult">
+          <div class="res-title">✅ Training Complete!</div>
+          <div id="trainInfo"></div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-card" id="card2">
+        <div class="step-header">
+          <div class="step-num">2</div>
+          <h3>Generate Encoding Ψ</h3>
+        </div>
+        <p>Transform sensitive data into privacy-safe encoding. Original data stays protected — only Ψ is shared.</p>
+        <div class="file-wrap">
+          <input type="file" id="encodeFile" accept=".csv"/>
+        </div>
+        <button class="btn btn-green" id="encodeBtn" onclick="encodeData()">🔒 Generate Encoding Ψ</button>
+        <div class="loading" id="encodeLoading"><span class="spinner"></span> Generating encoding...</div>
+        <div class="result-panel" id="encodeResult">
+          <div class="res-title">✅ Encoding Generated!</div>
+          <div id="encodeInfo"></div>
+          <div class="privacy-badge">🛡️ Original data is PROTECTED</div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-card" id="card3">
+        <div class="step-header">
+          <div class="step-num">3</div>
+          <h3>Predict & Classify</h3>
+        </div>
+        <p>Upload data to get AI predictions. All predictions shown — supports multiple patients at once.</p>
+        <div class="file-wrap">
+          <input type="file" id="predictFile" accept=".csv"/>
+        </div>
+        <button class="btn btn-orange" id="predictBtn" onclick="predictData()">🎯 Get Predictions</button>
+        <div class="loading" id="predictLoading"><span class="spinner"></span> Making predictions...</div>
+        <div class="result-panel" id="predictResult">
+          <div class="res-title">✅ Predictions Ready!</div>
+          <div id="predictInfo"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: EVALUATE -->
+  <div id="tab-evaluate" class="tab-content">
+    <div class="section-title">📊 Performance Comparison</div>
+    <p style="color:#6677aa; font-size:13px; margin-bottom:20px;">Compare: Original Data vs Baseline vs Our Encoding Ψ</p>
+    <div class="file-wrap" style="max-width:400px;">
+      <input type="file" id="evalFile" accept=".csv"/>
+    </div>
+    <button class="btn btn-purple" style="max-width:200px; margin-bottom:20px;" onclick="evaluateModel()">📊 Run Evaluation</button>
+    <div class="loading" id="evalLoading"><span class="spinner"></span> Evaluating...</div>
+    <div class="metrics-section" id="metricsSection" style="display:none;">
+      <div class="section-title">🏆 Best Results</div>
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-value" id="metKNN">-</div><div class="metric-label">KNN F1 Score (%)</div></div>
+        <div class="metric-card"><div class="metric-value" id="metRF">-</div><div class="metric-label">Random Forest F1 (%)</div></div>
+        <div class="metric-card"><div class="metric-value" id="metImp">-</div><div class="metric-label">Avg Improvement</div></div>
+        <div class="metric-card"><div class="metric-value" style="color:#00ff88; font-size:22px;">✅</div><div class="metric-label">Privacy Protected</div></div>
+      </div>
+    </div>
+    <div class="chart-section" id="chartSection" style="display:none;">
+      <div class="section-title">📈 Performance Chart</div>
+      <div class="chart-container"><img id="perfChart" src="" alt="Performance Chart"/></div>
+    </div>
+    <div class="table-section" id="resultsTableSection" style="display:none;">
+      <div class="section-title">📋 Detailed Results</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Model</th><th>Original (%)</th><th>Baseline (%)</th><th>Our Encoding (%)</th><th>Improvement</th></tr></thead>
+          <tbody id="resultsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: THREAT -->
+  <div id="tab-threat" class="tab-content">
+    <div class="section-title">🛡️ Security Threat Analysis</div>
+    <p style="color:#6677aa; font-size:13px; margin-bottom:20px;">Analysis of 4 attack scenarios.</p>
+    <button class="btn btn-red" style="max-width:200px; margin-bottom:20px;" onclick="loadThreat()">🔍 Load Analysis</button>
+    <div id="threatContent"></div>
+  </div>
+
+  <!-- TAB: ABOUT -->
+  <div id="tab-about" class="tab-content">
+    <div class="section-title">ℹ️ About This Project</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <div style="background:#0d1030; border:1px solid #1e2050; border-radius:12px; padding:20px;">
+        <h4 style="color:#00d4ff; margin-bottom:12px;">🎯 Project Goal</h4>
+        <p style="font-size:13px; color:#8899bb; line-height:1.6;">Enable hospitals to share data with cloud AI services without exposing sensitive patient data. The encoded form Ψ preserves utility while protecting privacy.</p>
+      </div>
+      <div style="background:#0d1030; border:1px solid #1e2050; border-radius:12px; padding:20px;">
+        <h4 style="color:#00d4ff; margin-bottom:12px;">🔧 System Components</h4>
+        <ul style="font-size:12px; color:#8899bb; list-style:none; line-height:2;">
+          <li>✅ Supervised Residual Autoencoder (SRAE)</li>
+          <li>✅ Reconstruction Loss (L1)</li>
+          <li>✅ Classification Loss (L2)</li>
+          <li>✅ Center Loss (L3)</li>
+          <li>✅ PCA Cosine Loss (L4)</li>
+        </ul>
+      </div>
+      <div style="background:#0d1030; border:1px solid #1e2050; border-radius:12px; padding:20px;">
+        <h4 style="color:#00d4ff; margin-bottom:12px;">📊 Dataset Used</h4>
+        <ul style="font-size:12px; color:#8899bb; list-style:none; line-height:2;">
+          <li>🧬 Leukemia GSE14317</li>
+          <li>👥 25 Patients</li>
+          <li>🔬 22,277 Gene Features</li>
+          <li>🏷️ ATL vs Normal</li>
+        </ul>
+      </div>
+      <div style="background:#0d1030; border:1px solid #1e2050; border-radius:12px; padding:20px;">
+        <h4 style="color:#00d4ff; margin-bottom:12px;">📈 Key Results</h4>
+        <ul style="font-size:12px; color:#8899bb; list-style:none; line-height:2;">
+          <li>✅ 100% F1 Score (KNN, SVM, RF, MLP)</li>
+          <li>✅ 22,277 dims → 480 dims</li>
+          <li>✅ 98% size reduction</li>
+          <li>✅ Full privacy guaranteed</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">Privacy-Preserving Machine Learning — Multi-Objective Autoencoder Approach</div>
+
+<script>
+  const API = 'http://localhost:5000/api';
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', ['main','evaluate','threat','about'][i] === name);
+    });
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  function setStatus(msg, type = 'info') {
+    const colors = { info:'#00d4ff', success:'#00ff88', error:'#ff4444', loading:'#ffaa00' };
+    const dot = document.getElementById('statusDot');
+    dot.style.background = colors[type] || '#00d4ff';
+    dot.style.boxShadow = `0 0 6px ${colors[type]}`;
+    document.getElementById('statusText').textContent = msg;
+  }
+
+  function showLoading(id, show) {
+    document.getElementById(id + 'Loading').style.display = show ? 'block' : 'none';
+  }
+
+  function showResult(id) {
+    const el = document.getElementById(id + 'Result');
+    if (el) el.classList.add('show');
+  }
+
+  /* TRAIN */
+  async function trainModel() {
+    const file = document.getElementById('trainFile').files[0];
+    if (!file) { alert('Please select a CSV file!'); return; }
+    const epochs = document.getElementById('epochsInput').value;
+    const btn = document.getElementById('trainBtn');
+    btn.disabled = true;
+    showLoading('train', true);
+    setStatus('Training SRAE model...', 'loading');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('epochs', epochs);
+    try {
+      const res  = await fetch(`${API}/train`, { method:'POST', body:fd });
+      const data = await res.json();
+      if (data.status === 'success') {
+        document.getElementById('trainInfo').innerHTML = `
+          <div class="res-row"><span>Dataset</span><span class="res-val">${file.name}</span></div>
+          <div class="res-row"><span>Samples</span><span class="res-val">${data.num_samples}</span></div>
+          <div class="res-row"><span>Features</span><span class="res-val">${data.num_features}</span></div>
+          <div class="res-row"><span>Classes</span><span class="res-val">${data.num_classes}</span></div>
+          <div class="res-row"><span>Encoding Dim</span><span class="res-val">${data.encoding_dim}</span></div>
+          <div class="res-row"><span>Classes List</span><span class="res-val">${data.classes.join(', ')}</span></div>`;
+        showResult('train');
+        document.getElementById('card1').classList.add('active');
+        setStatus('✅ Model trained! Proceed to Step 2.', 'success');
+      } else {
+        setStatus('❌ ' + data.message, 'error');
+        alert('Error: ' + data.message);
+      }
+    } catch(e) {
+      setStatus('❌ Cannot connect to server!', 'error');
+      alert('Run: python backend/app.py');
+    }
+    btn.disabled = false;
+    showLoading('train', false);
+  }
+
+  /* ENCODE */
+  async function encodeData() {
+    const file = document.getElementById('encodeFile').files[0];
+    if (!file) { alert('Please select a CSV file!'); return; }
+    const btn = document.getElementById('encodeBtn');
+    btn.disabled = true;
+    showLoading('encode', true);
+    setStatus('Generating encoding Ψ...', 'loading');
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res  = await fetch(`${API}/encode`, { method:'POST', body:fd });
+      const data = await res.json();
+      if (data.status === 'success') {
+        document.getElementById('encodeInfo').innerHTML = `
+          <div class="res-row"><span>Original Shape</span><span class="res-val">${data.original_shape}</span></div>
+          <div class="res-row"><span>Encoding Shape Ψ</span><span class="res-val">${data.encoding_shape}</span></div>
+          <div class="res-row"><span>Original Size</span><span class="res-val">${data.original_size_kb} KB</span></div>
+          <div class="res-row"><span>Encoding Size</span><span class="res-val">${data.encoding_size_kb} KB</span></div>`;
+        showResult('encode');
+        document.getElementById('card2').classList.add('active');
+        setStatus('✅ Encoding generated! Data protected.', 'success');
+      } else {
+        setStatus('❌ ' + data.message, 'error');
+        alert(data.message);
+      }
+    } catch(e) { setStatus('❌ Server error.', 'error'); }
+    btn.disabled = false;
+    showLoading('encode', false);
+  }
+
+  /* ── PREDICT — FIXED: Shows ALL patients ── */
+  async function predictData() {
+    const file = document.getElementById('predictFile').files[0];
+    if (!file) { alert('Please select a CSV file!'); return; }
+
+    const btn = document.getElementById('predictBtn');
+    btn.disabled = true;
+    showLoading('predict', true);
+    setStatus('Running predictions...', 'loading');
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    try {
+      const res  = await fetch(`${API}/predict`, { method:'POST', body:fd });
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        const preds = data.predictions; // ALL predictions - no slice!
+
+        // Count ATL and Normal
+        let atlCount    = preds.filter(p => p.prediction.toLowerCase() === 'atl').length;
+        let normalCount = preds.filter(p => p.prediction.toLowerCase() === 'normal').length;
+
+        // Summary boxes
+        let summaryHtml = `
+          <div class="pred-summary">
+            <div class="pred-count-box">
+              <span class="big">${preds.length}</span>
+              Total Patients
+            </div>
+            <div class="pred-count-box" style="border-color:#ff4444; color:#ff4444;">
+              <span class="big">${atlCount}</span>
+              ATL (Cancer)
+            </div>
+            <div class="pred-count-box" style="border-color:#00ff88; color:#00ff88;">
+              <span class="big">${normalCount}</span>
+              Normal (Healthy)
+            </div>
+          </div>`;
+
+        // ALL rows - no limit!
+        let rows = preds.map(p => {
+          const isATL    = p.prediction.toLowerCase() === 'atl';
+          const rowClass = isATL ? 'pred-row-atl' : 'pred-row-normal';
+          const color    = p.confidence > 70 ? '#00ff88' : '#ffaa00';
+          const label    = isATL
+            ? `<strong style="color:#ff6666;">${p.prediction}</strong>`
+            : `<strong style="color:#00ff88;">${p.prediction}</strong>`;
+          return `<tr class="${rowClass}">
+            <td>${p.sample}</td>
+            <td>${label}</td>
+            <td><span style="color:${color}">${p.confidence}%</span></td>
+          </tr>`;
+        }).join('');
+
+        document.getElementById('predictInfo').innerHTML = summaryHtml + `
+          <div class="pred-table-wrap">
+            <table>
+              <thead><tr><th>Patient #</th><th>Prediction</th><th>Confidence</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+
+        showResult('predict');
+        document.getElementById('card3').classList.add('active');
+        setStatus(`✅ ${preds.length} patient(s) predicted!`, 'success');
+      } else {
+        setStatus('❌ ' + data.message, 'error');
+        alert(data.message);
+      }
+    } catch(e) { setStatus('❌ Server error.', 'error'); }
+
+    btn.disabled = false;
+    showLoading('predict', false);
+  }
+
+  /* EVALUATE */
+  async function evaluateModel() {
+    const file = document.getElementById('evalFile').files[0];
+    if (!file) { alert('Please select a CSV file!'); return; }
+    showLoading('eval', true);
+    setStatus('Running evaluation...', 'loading');
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res  = await fetch(`${API}/evaluate`, { method:'POST', body:fd });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const results = data.results;
+        const knnEnc  = results['KNN'] ? results['KNN'].encoding : 0;
+        const rfEnc   = results['RF']  ? results['RF'].encoding  : 0;
+        const avgImp  = Object.values(results).reduce((s,r) => s+r.improvement, 0) / Object.keys(results).length;
+        document.getElementById('metKNN').textContent = knnEnc.toFixed(1);
+        document.getElementById('metRF').textContent  = rfEnc.toFixed(1);
+        document.getElementById('metImp').textContent = (avgImp>0?'+':'') + avgImp.toFixed(1) + '%';
+        document.getElementById('metricsSection').style.display = 'block';
+        if (data.chart) {
+          document.getElementById('perfChart').src = 'data:image/png;base64,' + data.chart;
+          document.getElementById('chartSection').style.display = 'block';
+        }
+        let rows = '';
+        for (const [model, r] of Object.entries(results)) {
+          rows += `<tr>
+            <td><strong>${model}</strong></td>
+            <td>${r.original.toFixed(2)}</td>
+            <td>${r.baseline.toFixed(2)}</td>
+            <td><strong style="color:#00ff88">${r.encoding.toFixed(2)}</strong></td>
+            <td class="${r.improvement>=0?'positive':'negative'}">${r.improvement>0?'+':''}${r.improvement.toFixed(2)}%</td>
+          </tr>`;
+        }
+        document.getElementById('resultsTableBody').innerHTML = rows;
+        document.getElementById('resultsTableSection').style.display = 'block';
+        setStatus('✅ Evaluation complete!', 'success');
+      } else {
+        setStatus('❌ ' + data.message, 'error');
+        alert(data.message);
+      }
+    } catch(e) { setStatus('❌ Server error.', 'error'); }
+    showLoading('eval', false);
+  }
+
+  /* THREAT */
+  async function loadThreat() {
+    setStatus('Loading threat analysis...', 'loading');
+    try {
+      const res  = await fetch(`${API}/threat`);
+      const data = await res.json();
+      const riskColors = { LOW:'#00ff88', MEDIUM:'#ffaa00', HIGH:'#ff4444' };
+      let html = '<div class="threat-grid">';
+      for (const s of data.scenarios) {
+        const color = riskColors[s.risk];
+        html += `<div class="threat-card">
+          <h4>Scenario ${s.id}: ${s.actor}</h4>
+          <div style="margin-bottom:8px;">
+            <span style="font-size:11px; color:#6677aa;">Risk: </span>
+            <span style="color:${color}; font-weight:bold;">${s.risk}</span>
+          </div>
+          <div style="font-size:12px; background:#060618; border-radius:6px;
+                      padding:8px; color:#aabbcc; border-left:3px solid ${color};">
+            ${s.reason}
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+      document.getElementById('threatContent').innerHTML = html;
+      setStatus('✅ Threat analysis loaded.', 'success');
+    } catch(e) {
+      setStatus('❌ Server error.', 'error');
+    }
+  }
+
+  /* HEALTH CHECK */
+  window.addEventListener('load', async () => {
+    try {
+      const res  = await fetch(`${API}/health`);
+      const data = await res.json();
+      setStatus(
+        `Server connected — Model trained: ${data.model_trained ? 'YES ✅' : 'NO (Train first)'}`,
+        data.model_trained ? 'success' : 'info'
+      );
+    } catch(e) {
+      setStatus('⚠️ Server offline — Run: python backend/app.py', 'error');
+    }
+  });
+</script>
+</body>
+</html>
