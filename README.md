@@ -1,9 +1,9 @@
-# 🔐 Privacy-Preserving ML System
+#  Privacy-Preserving ML System
 ## Multi-Objective Supervised Residual Autoencoder
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 privacy_ml_project/
@@ -27,7 +27,7 @@ privacy_ml_project/
 
 ---
 
-## 🚀 HOW TO RUN — Step by Step
+## HOW TO RUN — Step by Step
 
 ### STEP 1: Install Requirements (VS Code Terminal)
 ```bash
@@ -56,7 +56,7 @@ OR go to: http://localhost:5000
 
 ---
 
-## 📊 CSV Format
+##  CSV Format
 Your CSV file should be:
 - All feature columns first
 - Last column = class label
@@ -70,26 +70,11 @@ gene1, gene2, gene3, ..., cancer_type
 
 ---
 
-## 🧪 Testing with Demo Data
+##  Testing with Demo Data
 ```python
 # In VS Code terminal:
 python backend/utils.py  # loads MNIST automatically
 ```
-
----
-
-## 📖 Files Explained
-
-| File | Purpose |
-|------|---------|
-| model.py | Builds the SRAE neural network |
-| losses.py | Center Loss + PCA Loss + combined loss |
-| train.py | Trains the model, saves best weights |
-| evaluate.py | Compares Org vs Baseline vs Encoding |
-| app.py | Flask API: /train /encode /predict /evaluate |
-| index.html | Web interface for panel members |
-
----
 
 ## 🔐 Privacy Guarantee
 - Original data NEVER leaves your system
